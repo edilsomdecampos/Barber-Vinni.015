@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Barber Vinni.015 | App</title>
+
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💈</text></svg>">
+
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* --- 1. VARIÁVEIS E RESET --- */
+        :root {
+            --bg-body: #0a0a0a;
+            --bg-card: #141414;
+            --gold: #D4AF37;
+            --text-main: #e5e5e5;
+            --text-muted: #a0a0a0;
+            --alert-bg: #b91c1c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove flash azul no toque em mobile */
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            padding-bottom: 100px;
+        }
+
+        /* --- 2. FAIXA DE AVISO --- */
+        #avisoBanner {
+            background: var(--alert-bg);
+            color: #fff;
+            text-align: center;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            display: none;
+            border-bottom: 1px solid #fff;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* --- 3. HERO (CABEÇALHO) --- */
+        .hero {
+            background-image: url('imagem/imagemsalao.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 40vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-bottom: 3px solid var(--gold);
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, var(--bg-body), rgba(0, 0, 0, 0.4));
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(3px);
+            border: 1px solid #333;
+        }
+
+        .hero h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 5px;
+        }
+
+        /* --- 4. GRID DE CARDS --- */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .grid-servicos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-bottom: 1px solid var(--gold);
+        }
+
+        .card-body {
+            padding: 15px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .card-price {
+            font-size: 1.2rem;
+            color: var(--gold);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .card-time {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* --- 5. SEÇÃO DE CONTATO --- */
+        .contact-section {
+            background: #141414;
+            padding: 20px;
+            border-top: 1px solid #333;
+            margin-top: 40px;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 600px) {
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- 6. CHAT FLUTUANTE E TOOLTIP --- */
+        #chatBtnFloat {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 65px;
+            height: 65px;
+            background-color: #D4AF37;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 9999;
+            animation: pulsar 2s infinite;
+            transition: transform 0.3s;
+        }
+
+        #chatBtnFloat:hover {
+            transform: scale(1.1);
+        }
+
+        /* TOOLTIP PADRÃO (PC) */
+        .tooltip {
+            position: absolute;
+            right: 75px;
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            opacity: 0; /* Invisível no PC até passar o mouse */
+            transition: 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #chatBtnFloat:hover .tooltip {
+            opacity: 1;
+            right: 80px;
+        }
+
+        /* AJUSTES MOBILE - CORREÇÃO DA NUVEM */
+        @media (max-width: 600px) {
+            .tooltip {
+                opacity: 1; /* Sempre visível no celular */
+                right: 75px; /* Posição fixa */
+                background: var(--gold); /* Dourado para chamar atenção */
+                color: #000; /* Texto preto */
+                font-weight: bold;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            }
+        }
+
+        @keyframes pulsar {
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 360px;
+            height: 550px;
+            background: #111;
+            border: 1px solid var(--gold);
+            border-radius: 15px;
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #222;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: radial-gradient(#222 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s;
+        }
+
+        .bot {
+            background: #333;
+            align-self: flex-start;
+            border-left: 3px solid var(--gold);
+            color: #ddd;
+        }
+
+        .user {
+            background: var(--gold);
+            color: #000;
+            align-self: flex-end;
+            font-weight: bold;
+        }
+
+        .chat-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .opt-btn {
+            flex: 1 1 40%;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .opt-btn:hover {
+            background: var(--gold);
+            color: #000;
+        }
+
+        .input-area {
+            padding: 10px;
+            background: #222;
+            display: none;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: none;
+            background: #000;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        .input-area button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--gold);
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .chat-window {
+                bottom: 0;
+                right: 0;
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                border: none;
+            }
+        }
+
+        /* --- 7. MODAL ADMIN --- */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-box {
+            background: #1a1a1a;
+            padding: 30px;
+            border: 1px solid var(--gold);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 10px;
+        }
+
+        /* CORREÇÃO DO BOTÃO ADMIN PARA MOBILE */
+        #adminBtn {
+            cursor: pointer;
+            padding: 15px;
+            display: inline-block;
+            user-select: none; /* Impede seleção de texto */
+            -webkit-user-select: none; /* Safari/iPhone */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="avisoBanner"></div>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>BARBER VINNI</h1>
+            <p style="color:var(--text-muted); letter-spacing: 2px;">SOROCABA • SP</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="grid-servicos" id="cardsContainer">
+            <div class="card" onclick="iniciarChatServico(1)">
+                <img src="imagem/corte-social.jpg" alt="Corte Social" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=SOCIAL'">
+                <div class="card-body">
+                    <h3>Corte Social</h3>
+                    <div><span class="card-price">R$ 25,00</span><span class="card-time">⏱ 30 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(2)">
+                <img src="imagem/social-barba.jpg" alt="Corte Social + Barba" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=SOC+BARBA'">
+                <div class="card-body">
+                    <h3>Corte Social + Barba</h3>
+                    <div><span class="card-price">R$ 50,00</span><span class="card-time">⏱ 60 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(3)">
+                <img src="imagem/degrade.jpg" alt="Corte Degradê" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=DEGRADE'">
+                <div class="card-body">
+                    <h3>Corte Degradê</h3>
+                    <div><span class="card-price">R$ 30,00</span><span class="card-time">⏱ 40 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(4)">
+                <img src="imagem/degrade-barba.jpg" alt="Corte + Barba " onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=DEG+BARBA'">
+                <div class="card-body">
+                    <h3>Corte Degradê + Barba</h3>
+                    <div><span class="card-price">R$ 55,00</span><span class="card-time">⏱ 60 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(5)">
+                <img src="imagem/barba-desenhada.jpg" alt="barba Desenhada" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=BARBA+DES.'">
+                <div class="card-body">
+                    <h3>Barba Desenhada</h3>
+                    <div><span class="card-price">R$ 25,00</span><span class="card-time">⏱ 30 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(6)">
+                <img src="imagem/barba-raspada.jpg" alt="Barba Raspada" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=BARBA+LISA'">
+                <div class="card-body">
+                    <h3>Barba Raspada</h3>
+                    <div><span class="card-price">R$ 20,00</span><span class="card-time">⏱ 20 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(7)">
+                <img src="imagem/pigmentação.jpg" alt="Pigmentacao" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=PIGMENTACAO'">
+                <div class="card-body">
+                    <h3>Degradê + Pigmentação</h3>
+                    <div><span class="card-price">R$ 60,00</span><span class="card-time">⏱ 60 min</span></div>
+                </div>
+            </div>
+
+            <div class="card" onclick="iniciarChatServico(8)">
+                <img src="imagem/completo.jpg" alt="Degradê + Barba + Pigmentacao" onerror="this.src='https://placehold.co/250x250/222/D4AF37?text=COMPLETO'">
+                <div class="card-body">
+                    <h3>Degradê + Barba + Pigm.</h3>
+                    <div><span class="card-price">R$ 90,00</span><span class="card-time">⏱ 01:30 hrs</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="contact-section">
+        <h2 style="text-align:center; margin-bottom:20px; font-size:1.5rem; color:var(--gold);">Onde Estamos</h2>
+        <div class="contact-grid">
+
+            <div class="map-container">
+                <iframe
+                    src="https://maps.google.com/maps?q=Rua%20Jos%C3%A9%20Al%C3%ADpio%20Soares%20Filho%2C%20122%2C%20Sorocaba%20-%20SP&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    allowfullscreen="" loading="lazy"
+                    style="width: 100%; height: 250px; border: 1px solid var(--gold); border-radius: 8px; filter: grayscale(100%) invert(92%) contrast(83%);"></iframe>
+            </div>
+
+            <div class="info-container" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                
+                <div style="margin-bottom: 20px; font-size: 1rem;">
+                    📍 <span>Rua José Alípio Soares Filho, 122<br>Sorocaba - SP | CEP: 18074-591</span>
+                </div>
+
+                <div style="margin-bottom: 20px; font-size: 1rem;">
+                    🕒 <span>Segunda a Sábado<br>08:00 às 20:00</span>
+                </div>
+
+                <div style="margin-bottom: 20px; font-size: 1rem; color: var(--gold); font-weight: bold;">
+                    ⚠️ <span>Somente com horário marcado</span>
+                </div>
+
+                <div style="margin-bottom: 20px; font-size: 1rem;">
+                    📞 <span>(15) 98840-4538</span>
+                </div>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content: center;">
+                    <a href="https://instagram.com/barbervinni.015" target="_blank" class="opt-btn"
+                        style="text-decoration:none;">
+                        📸 @barbervinni.015
+                    </a>
+                    <a href="https://wa.me/5515988404538" target="_blank" class="opt-btn" style="text-decoration:none;">
+                        💬 WhatsApp
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer style="text-align:center; padding:20px; color:#555;">
+        <span id="adminBtn">© 2025 Barber Vinni (Admin)</span>
+    </footer>
+
+    <div id="chatBtnFloat" onclick="toggleChatGeral()">💬<span class="tooltip">Agendar</span></div>
+
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div
+                    style="width:35px; height:35px; background:var(--gold); border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold;">
+                    V</div>
+                <div>
+                    <strong style="color:#fff;">Vinni Assistente</strong><br>
+                    <span style="font-size:0.75rem; color:#22c55e;">● Online Agora</span>
+                </div>
+            </div>
+            <button onclick="fecharChat()"
+                style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">✕</button>
+        </div>
+
+        <div class="chat-body" id="chatBody"></div>
+
+        <div class="input-area" id="inputArea">
+            <input type="text" id="userInput" name="chat_msg_unique_id_v2" autocomplete="off" placeholder="Digite sua resposta...">
+            <button onclick="processarInput()">➤</button>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal">
+        <div class="modal-box">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:#fff;">
+                <h3>Área Restrita</h3>
+                <button onclick="document.getElementById('adminModal').style.display='none'"
+                    style="background:none; border:none; color:#fff;">✕</button>
+            </div>
+
+            <div id="loginArea">
+                <input type="email" id="admEmail" name="admin_login_email_safe" autocomplete="off" placeholder="Email"
+                    style="width:100%; padding:10px; margin-bottom:10px; background:#000; border:1px solid #333; color:#fff;">
+                <input type="password" id="admPass" name="admin_login_pass_safe" autocomplete="new-password" placeholder="Senha"
+                    style="width:100%; padding:10px; margin-bottom:10px; background:#000; border:1px solid #333; color:#fff;">
+                <button onclick="loginAdmin()"
+                    style="width:100%; padding:10px; background:var(--gold); border:none; font-weight:bold; cursor:pointer;">ENTRAR</button>
+            </div>
+
+            <div id="painelArea" style="display:none; color:#fff;">
+
+                <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:15px;">
+                    <label style="color:var(--gold); font-size:0.9rem;">📢 Aviso na Tela Principal:</label>
+                    <input type="text" id="avisoInput" placeholder="Ex: Fechamos às 16h hoje"
+                        style="width:100%; padding:10px; margin-top:5px; background:#000; border:1px solid #555; color:#fff;">
+                    <button onclick="salvarAviso()"
+                        style="width:100%; margin-top:5px; padding:8px; background:#333; color:#fff; border:1px solid #555;">Atualizar
+                        Aviso</button>
+                </div>
+
+                <div id="listaAgenda" style="max-height:250px; overflow-y:auto; margin-bottom:15px;"></div>
+
+                <button onclick="logoutAdmin()"
+                    style="width:100%; padding:10px; background:#b91c1c; color:#fff; border:none; cursor:pointer;">SAIR</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO ---
+        const SUPABASE_URL = 'https://yvrkqozdxsvjaxdxtkqu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2cmtxb3pkeHN2amF4ZHh0a3F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNzExMTgsImV4cCI6MjA4Mjg0NzExOH0.FNhu5vjSGZGdH1x5kXCa3y4trDz65OO7dchzYP8pq2g';
+        const WHATSAPP = '5515988404538';
+        const clienteSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // CONFIGURAÇÕES DO SALÃO
+        const HORA_ABERTURA = 8;
+        const HORA_FECHAMENTO = 20;
+
+        // --- DADOS REAIS ---
+        const catalogo = [
+            { id: 1, nome: 'Corte Social', preco: '25,00', tempo: 30, img: 'imagem/social.jpg' },
+            { id: 2, nome: 'Corte Social + Barba', preco: '50,00', tempo: 60, img: 'imagem/social_barba.jpg' },
+            { id: 3, nome: 'Corte Degradê', preco: '30,00', tempo: 40, img: 'imagem/degrade.jpg' },
+            { id: 4, nome: 'Corte Degradê + Barba', preco: '55,00', tempo: 60, img: 'imagem/degrade_barba.jpg' },
+            { id: 5, nome: 'Barba Desenhada', preco: '25,00', tempo: 30, img: 'imagem/barba_desenhada.jpg' },
+            { id: 6, nome: 'Barba Raspada', preco: '20,00', tempo: 20, img: 'imagem/barba_raspada.jpg' },
+            { id: 7, nome: 'Degradê + Pigmentação', preco: '60,00', tempo: 60, img: 'imagem/pigmentacao.jpg' },
+            { id: 8, nome: 'Degradê + Barba + Pig.', preco: '90,00', tempo: 90, img: 'imagem/completo_pig.jpg' }
+        ];
+
+        let agendamento = {};
+        let passo = 0;
+
+        window.onload = function () {
+            carregarAvisoDoBanco();
+            const input = document.getElementById('userInput');
+            if (input) {
+                input.value = '';
+                input.setAttribute('autocomplete', 'off');
+            }
+        };
+
+        async function carregarAvisoDoBanco() {
+            const { data } = await clienteSupabase.from('avisos').select('texto').eq('id', 1).single();
+            const banner = document.getElementById('avisoBanner');
+
+            if (data && data.texto && data.texto.trim() !== "") {
+                banner.innerHTML = `⚠️ ${data.texto}`;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // --- CHAT ---
+        const chatWindow = document.getElementById('chatWindow');
+        const chatBody = document.getElementById('chatBody');
+        const inputArea = document.getElementById('inputArea');
+        const userInput = document.getElementById('userInput');
+        const chatBtnFloat = document.getElementById('chatBtnFloat'); // Pegamos o botão aqui
+
+        function fecharChat() { 
+            chatWindow.style.display = 'none';
+            chatBtnFloat.style.display = 'flex'; 
+        }
+
+        function iniciarChatServico(id) {
+            chatWindow.style.display = 'flex';
+            chatBtnFloat.style.display = 'none';
+            chatBody.innerHTML = '';
+            passo = 0; agendamento = {}; inputArea.style.display = 'none';
+
+            const item = catalogo.find(i => i.id === id);
+            if (!item) return;
+
+            agendamento.servico = item.nome;
+            agendamento.tempo = item.tempo;
+            agendamento.preco = item.preco;
+
+            addMsg(`Olá! Vamos agendar o <b>${item.nome}</b>?`, 'bot');
+            setTimeout(() => { addMsg("Qual é o seu **Nome**?", 'bot'); inputArea.style.display = 'flex'; userInput.focus(); }, 600);
+        }
+
+        function toggleChatGeral() {
+            if (chatWindow.style.display === 'flex') fecharChat();
+            else {
+                chatWindow.style.display = 'flex';
+                chatBtnFloat.style.display = 'none';
+                chatBody.innerHTML = ''; passo = 0; agendamento = {}; inputArea.style.display = 'none';
+                addMsg("E aí! Bem-vindo.", 'bot');
+                setTimeout(() => { addMsg("Qual seu **Nome**?", 'bot'); inputArea.style.display = 'flex'; userInput.focus(); }, 600);
+            }
+        }
+
+        function addMsg(txt, tipo) {
+            const div = document.createElement('div'); div.className = `msg ${tipo}`; div.innerHTML = txt;
+            chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') processarInput() });
+
+        function processarInput() {
+            const txt = userInput.value.trim();
+            if (!txt) return;
+            addMsg(txt, 'user'); userInput.value = ''; inputArea.style.display = 'none';
+
+            if (passo === 0) {
+                agendamento.nome = txt;
+                setTimeout(() => { addMsg(`Prazer, ${txt}. E seu **WhatsApp**?`, 'bot'); inputArea.style.display = 'flex'; userInput.focus(); passo = 1; }, 600);
+            } else if (passo === 1) {
+                agendamento.zap = txt;
+                if (agendamento.servico) {
+                    setTimeout(() => { addMsg("Qual **Data** fica boa?", 'bot'); mostrarSeletorData(); }, 600);
+                } else {
+                    setTimeout(() => { addMsg("O que vamos fazer hoje?", 'bot'); mostrarOpcoesGeral(); }, 600);
+                }
+            }
+        }
+
+        function mostrarOpcoesGeral() {
+            const div = document.createElement('div'); div.className = 'chat-options';
+            catalogo.forEach(s => {
+                const btn = document.createElement('button'); btn.className = 'opt-btn';
+                btn.innerHTML = `${s.nome}<br><small>${s.tempo} min</small>`;
+                btn.onclick = () => { agendamento.servico = s.nome; agendamento.tempo = s.tempo; agendamento.preco = s.preco; addMsg(s.nome, 'user'); setTimeout(() => { addMsg("Qual **Data**?", 'bot'); mostrarSeletorData(); }, 500); };
+                div.appendChild(btn);
+            });
+            chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function mostrarSeletorData() {
+            const div = document.createElement('div'); div.className = 'chat-options';
+            const input = document.createElement('input');
+            input.type = 'date'; input.style.background = '#fff'; input.style.color = '#000'; input.style.borderRadius = '5px'; input.style.padding = '10px';
+            input.min = new Date().toISOString().split('T')[0];
+
+            input.onchange = function () {
+                const d = new Date(this.value + "T00:00:00");
+                if (d.getDay() === 0) { alert("🚫 Fechado aos Domingos!"); this.value = ''; }
+            };
+
+            const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = 'VER HORÁRIOS ➤';
+            btn.onclick = () => { if (input.value) { agendamento.data = input.value; addMsg(`📅 ${input.value.split('-').reverse().join('/')}`, 'user'); buscarHorarios(input.value); } };
+            div.appendChild(input); div.appendChild(btn); chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        async function buscarHorarios(data) {
+            addMsg("Calculando...", 'bot');
+            const { data: ocupados } = await clienteSupabase.from('agendamentos').select('*').eq('data', data);
+
+            const div = document.createElement('div'); div.className = 'chat-options';
+            let inicio = HORA_ABERTURA * 60;
+            let fim = HORA_FECHAMENTO * 60;
+            let duracao = agendamento.tempo;
+            let temVaga = false;
+
+            for (let t = inicio; t < fim; t += duracao) {
+                let fimServico = t + duracao;
+                if (fimServico > fim) continue;
+
+                let livre = true;
+                if (ocupados) ocupados.forEach(ag => {
+                    let [h, m] = ag.hora.split(':').map(Number);
+                    let iniAg = h * 60 + m;
+                    let duracaoAgendada = ag.duracao || 40;
+                    let fimAg = iniAg + duracaoAgendada;
+
+                    if (t < fimAg && iniAg < fimServico) livre = false;
+                });
+
+                if (livre) {
+                    temVaga = true;
+                    let hh = Math.floor(t / 60).toString().padStart(2, '0');
+                    let mm = (t % 60).toString().padStart(2, '0');
+                    let horaStr = `${hh}:${mm}`;
+                    const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.innerText = horaStr;
+                    btn.onclick = () => fecharHorario(horaStr);
+                    div.appendChild(btn);
+                }
+            }
+
+            if (!temVaga) { addMsg("Dia cheio! Tente outro.", 'bot'); mostrarSeletorData(); }
+            else { addMsg("Horários livres:", 'bot'); chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight; }
+        }
+
+        function fecharHorario(hora) {
+            agendamento.hora = hora; addMsg(hora, 'user');
+            setTimeout(() => {
+                addMsg("Forma de pagamento?", 'bot');
+                const div = document.createElement('div'); div.className = 'chat-options';
+                const opcoes = ['Pix', 'Dinheiro', 'Débito', 'Crédito'];
+                opcoes.forEach(opcao => {
+                    const btn = document.createElement('button');
+                    btn.className = 'opt-btn';
+                    btn.innerText = opcao;
+                    btn.onclick = function () { finalizar(opcao); };
+                    div.appendChild(btn);
+                });
+                chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight;
+            }, 500);
+        }
+
+        async function finalizar(pag) {
+            agendamento.pagamento = pag;
+            addMsg(pag, 'user');
+            addMsg("Agendando...", 'bot');
+
+            const { error } = await clienteSupabase.from('agendamentos').insert([{
+                nome: agendamento.nome, whatsapp: agendamento.zap,
+                servico: agendamento.servico, data: agendamento.data,
+                hora: agendamento.hora, pagamento: agendamento.pagamento,
+                duracao: agendamento.tempo
+            }]);
+
+            if (error) {
+                addMsg("Erro. Tente novamente.", 'bot');
+            } else {
+                const dataBR = agendamento.data.split('-').reverse().join('/');
+                addMsg(`✅ **Confirmado!**\n📅 ${dataBR} às ${agendamento.hora}`, 'bot');
+                const link = `https://wa.me/${WHATSAPP}?text=Novo Agendamento: ${agendamento.nome} - ${agendamento.servico} dia ${dataBR} as ${agendamento.hora} (${agendamento.pagamento})`;
+                window.open(link, '_blank');
+                setTimeout(() => { location.reload(); }, 2000);
+            }
+        }
+
+        // --- ADMIN (CORREÇÃO MOBILE: 3 TOQUES) ---
+        const modal = document.getElementById('adminModal');
+        const btnAdmin = document.getElementById('adminBtn');
+        let contadorCliques = 0;
+        let resetTimer;
+
+        if (btnAdmin) {
+            // Usa 'click' que funciona bem em mobile e PC
+            btnAdmin.addEventListener('click', () => {
+                contadorCliques++;
+                
+                // Se der 3 cliques rápidos
+                if (contadorCliques === 3) {
+                    modal.style.display = 'flex'; 
+                    checkUser();
+                    contadorCliques = 0;
+                }
+
+                // Reseta a contagem se passar 800ms sem clicar
+                clearTimeout(resetTimer);
+                resetTimer = setTimeout(() => {
+                    contadorCliques = 0;
+                }, 800);
+            });
+        }
+
+        async function checkUser() {
+            const { data: { session } } = await clienteSupabase.auth.getSession();
+            if (session) {
+                document.getElementById('loginArea').style.display = 'none';
+                document.getElementById('painelArea').style.display = 'block';
+                const { data } = await clienteSupabase.from('avisos').select('texto').eq('id', 1).single();
+                if (data) document.getElementById('avisoInput').value = data.texto;
+                loadAgenda();
+            } else {
+                document.getElementById('loginArea').style.display = 'block';
+                document.getElementById('painelArea').style.display = 'none';
+            }
+        }
+
+        async function loginAdmin() {
+            const email = document.getElementById('admEmail').value;
+            const pass = document.getElementById('admPass').value;
+            await clienteSupabase.auth.signInWithPassword({ email, password: pass });
+            checkUser();
+        }
+        async function logoutAdmin() { await clienteSupabase.auth.signOut(); checkUser(); }
+
+        // --- ATUALIZAÇÃO DO AVISO ---
+        async function salvarAviso() {
+            const texto = document.getElementById('avisoInput').value;
+            await clienteSupabase.from('avisos').update({ texto: texto }).eq('id', 1);
+
+            if (texto.trim() === "") {
+                alert('Aviso Removido! O banner sumiu.');
+            } else {
+                alert('Aviso Atualizado!');
+            }
+            carregarAvisoDoBanco();
+        }
+
+        // --- ADMIN: CARREGAR E EXCLUIR ---
+        async function loadAgenda() {
+            const list = document.getElementById('listaAgenda'); list.innerHTML = 'Carregando...';
+            const { data } = await clienteSupabase.from('agendamentos')
+                .select('*')
+                .gte('data', new Date().toISOString().split('T')[0])
+                .order('data').order('hora');
+
+            list.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(d => {
+                    list.innerHTML += `
+                    <div style="border-bottom:1px solid #444; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <span style="color:var(--gold); font-size:0.9rem;">${d.data.split('-').reverse().join('/')} - ${d.hora}</span><br>
+                            <b>${d.nome}</b> <small>(${d.servico})</small><br>
+                            <small style="color:#aaa;">${d.pagamento}</small>
+                        </div>
+                        <button onclick="excluirAgendamento(${d.id})" style="background:none; border:none; cursor:pointer; font-size:1.2rem;" title="Excluir">
+                            🗑️
+                        </button>
+                    </div>`;
+                });
+            } else {
+                list.innerHTML = '<div style="padding:10px; text-align:center;">Agenda Vazia</div>';
+            }
+        }
+
+        async function excluirAgendamento(id) {
+            if (confirm("Tem certeza que deseja excluir esse agendamento?")) {
+                const { error } = await clienteSupabase.from('agendamentos').delete().eq('id', id);
+                if (error) alert("Erro ao excluir.");
+                else loadAgenda();
+            }
+        }
+    </script>
+</body>
+
+</html>
